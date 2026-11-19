@@ -164,6 +164,55 @@ Gridfinity units or more. Smaller boxes should use clip latches.
 Larger boxes use more filament, but result in more storage space per amount of
 filament and time spent to print.
 
+### Filament saving ("Light") options
+
+The **Filament Saving** customizer section has options to make a lighter box,
+similar to community "Light" remixes of this model. Two ready-made presets are
+in `rugged-box-gridfinity.json`; pick one from the customizer's preset
+drop-down:
+
+* **Light (filament saving)**: all of the options below, with 2 slim side ribs
+  per side
+* **Light, keep side ribs every other unit**: the same, but keeps every other
+  side rib instead of exactly 2
+
+| Option | Default | Light | Effect |
+| --- | --- | --- | --- |
+| **Floor Thickness** | 0 (= wall thickness) | 1.2 | Thickness of the top and bottom floors. This has the biggest effect. |
+| **Interior Border** | 5 | 0 | Extra space around the Gridfinity grid. At 0, the box walls act as the outer edge of the baseplate. |
+| **Baseplate Outer Frame** | on | off | Removes the baseplate edge profile along the walls, so only small pieces remain in the corners. Use with Interior Border 0. Not used with Gridfinity Stackable. |
+| **Side Rib Count** | -1 (one per unit) | 2 | Number of plain ribs per side, spread evenly from the first to the last Gridfinity unit. 0 removes them. |
+| **Side Rib Skip** | 0 | 0 | With Side Rib Count -1, skip this many units between ribs. The remaining ribs are centered. |
+| **Rear Rib Count** | -1 (one per inner unit) | 0 | Number of plain ribs on the rear between the hinges. |
+| **Side Rib Width** | 0 (= 2 × Rib Width) | 5 | Width of the plain side and rear ribs. |
+| **Side Rib Angle** | 8 | 0 | Taper of the plain ribs. 0 makes them straight. |
+| **Side Ribs On Top** | on | off | Adds the plain ribs to the box top as well. |
+| **Reinforced Corner Extensions** | on | off | With Reinforced Corners on, extends the thick corners along the walls to the nearest rib, latch or hinge. |
+
+The Light presets also set **Wall Thickness** 2.4, **Lip Thickness** 1.9,
+**Rib Width** 3.2, and turn off **Reinforced Corners**, **Gridfinity
+Stackable** and **Stacking Latches**.
+
+Sliced filament use for a 3×3 box (Bottom Height 6, Top Height 2), with each
+change added on top of the previous ones. Sliced with Bambu Studio, 0.20mm
+Standard @BBL P2S and Bambu PLA Basic:
+
+| Configuration | Bottom | Top | Total | Print time |
+| --- | --- | --- | --- | --- |
+| Upstream defaults (stackable, stacking latches) | 143.2 g | 102.5 g | 245.7 g | 6h 31m |
+| No stackable base, no stacking latches | 130.9 g | 93.2 g | 224.1 g | 5h 17m |
+| + Floor Thickness 1.2 | 115.2 g | 82.1 g | 197.3 g | 4h 40m |
+| + Wall 2.4 / Lip 1.9 | 104.3 g | 75.9 g | 180.2 g | 4h 21m |
+| + no reinforced corners | 103.3 g | 75.3 g | 178.7 g | 4h 22m |
+| + 2 straight 5mm side ribs, none on top or rear | 102.8 g | 74.8 g | 177.6 g | 4h 14m |
+| + Rib Width 3.2 | 101.2 g | 74.7 g | 175.8 g | 4h 12m |
+| + Interior Border 0 | 95.1 g | 71.9 g | 167.0 g | 4h 03m |
+| + Baseplate Outer Frame off (full Light preset) | 95.0 g | 71.9 g | 166.9 g | 4h 03m |
+
+The ribs and corners hold a lot of volume, but slicers fill most of it with
+sparse infill, so they save less filament than the floor, wall and border
+changes.
+
 ## Printing
 
 ### Printer preparation

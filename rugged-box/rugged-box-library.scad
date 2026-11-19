@@ -169,6 +169,15 @@ module rbox(
  *  - stacking_separation: The vertical distance between two stacked boxes.
  *    Used for stacking latch attachment placement.
  *  - size_tolerance: Size subtracted from latch and upper hinge widths for fit
+ *  - floor_thickness: Thickness of the box top and bottom floor. Set to 0 to
+ *    use wall_thickness (default).
+ *  - side_rib_width: Width of the plain side and rear ribs. Set to 0 to use
+ *    twice rib_width (default).
+ *  - side_rib_angle: Taper angle of the plain side and rear ribs. The ribs
+ *    widen by this angle toward the box wall.
+ *  - corner_extensions: When reinforced corners are enabled, extend the
+ *    corner reinforcement along the walls to the nearest ribs (default).
+ *  - side_ribs_on_top: Add plain side and rear ribs to the box top (default).
  *
  * Example:
  *
@@ -192,9 +201,15 @@ module rbox_size_adjustments(
     latch_amount_on_top=0,
     third_hinge_width=0,
     stacking_separation=0,
-    size_tolerance=0.05
+    size_tolerance=0.05,
+    floor_thickness=0,
+    side_rib_width=0,
+    side_rib_angle=plain_ribs_angle,
+    corner_extensions=true,
+    side_ribs_on_top=true
 ) {
     $b_wall_thickness = wall_thickness;
+    $b_floor_thickness = (floor_thickness > 0 ? floor_thickness : wall_thickness);
     $b_lip_thickness = lip_thickness;
     $b_rib_width = rib_width;
     $b_size_tolerance = size_tolerance;
@@ -203,13 +218,17 @@ module rbox_size_adjustments(
     $b_latch_amount_on_top = _init_latch_amount_on_top(latch_amount_on_top);
     $b_third_hinge_width = third_hinge_width;
     $b_stacking_separation = stacking_separation;
+    $b_side_rib_width = (side_rib_width > 0 ? side_rib_width : rib_width * 2);
+    $b_side_rib_angle = side_rib_angle;
+    $b_corner_extensions = corner_extensions;
+    $b_side_ribs_on_top = side_ribs_on_top;
     // Set computed values
     $b_total_lip_thickness = wall_thickness + lip_thickness;
     $b_lip_height = lip_thickness * 2;
     $b_edge_radius = wall_thickness / 5;
     // Set dependent values
-    $b_top_outer_height = $b_top_inner_height + wall_thickness;
-    $b_bottom_outer_height = $b_bottom_inner_height + wall_thickness;
+    $b_top_outer_height = $b_top_inner_height + $b_floor_thickness;
+    $b_bottom_outer_height = $b_bottom_inner_height + $b_floor_thickness;
     $b_outer_width = $b_inner_width + $b_total_lip_thickness * 2;
     $b_outer_length = $b_inner_length + $b_total_lip_thickness * 2;
     $b_curved_inner_width = $b_inner_width + $b_edge_radius * 2;
@@ -229,7 +248,7 @@ module rbox_bottom() { _box_part_setup("bottom") { rbox_body(); children(); } }
 module rbox_for_top() { _box_part_setup("top") children(); }
 module rbox_for_bottom() { _box_part_setup("bottom") children(); }
 
-module rbox_for_interior() { translate([0, 0, $b_wall_thickness]) children(); }
+module rbox_for_interior() { translate([0, 0, $b_floor_thickness]) children(); }
 
 module rbox_latch(placement="print") { _latch(placement); }
 
@@ -554,7 +573,7 @@ function _init_latch_amount_on_top(latch_amount_on_top) = (
     latch_amount_on_top > 0
         ? latch_amount_on_top
         : min(
-            ($b_top_inner_height + $b_wall_thickness) / 2,
+            ($b_top_inner_height + $b_floor_thickness) / 2,
             ($b_latch_type == "draw"
                 ? $b_latch_screw_separation - screw_eyelet_radius * 1.25
                 : min(
@@ -767,7 +786,7 @@ module _box_part_setup(part) {
 module _box_body() {
     _box_add_seal() {
         _box_sides();
-        _box_center_base(min($b_outer_height, $b_wall_thickness));
+        _box_center_base(min($b_outer_height, $b_floor_thickness));
         _box_ribs();
         _box_latch_ribs();
         _box_hinge_ribs();
@@ -793,7 +812,7 @@ module _box_body_modifier_volume() {
             _box_wall_shape(reinforced=true);
             square([$b_corner_radius + $b_total_lip_thickness, $b_outer_height] * 2);
         }
-        _box_center_base(min($b_outer_height, $b_wall_thickness));
+        _box_center_base(min($b_outer_height, $b_floor_thickness));
     }
 }
 
@@ -823,7 +842,7 @@ module _box_corners_extrude(
                 for (rz = [0:1:1]) {
                     mirror([rz, 0, 0])
                     rotate([0, 0, rz ? 0 : -90])
-                    if (_compute_latch_count() == 2 && ((i % 2) != rz)) {
+                    if ($b_corner_extensions && _compute_latch_count() == 2 && ((i % 2) != rz)) {
                         // Front/rear extensions to attachments
                         is_rear = (i == 2 || i == 3);
                         _box_corners_extrude_linear_extension(
@@ -840,14 +859,14 @@ module _box_corners_extrude(
                                     : 0
                             )
                         );
-                    } else if (_compute_latch_count() == 2 && len(rb_side_rib_positions()) >= 2 && ((i % 2) == rz)) {
+                    } else if ($b_corner_extensions && _compute_latch_count() == 2 && len(rb_side_rib_positions()) >= 2 && ((i % 2) == rz)) {
                         // Side extensions to ribs
                         idx = ((i == 0 || i == 1) ? 0 : len(rb_side_rib_positions()) - 1);
                         // idx is 0 for front-side, or last rib index for rear-side
                         _box_corners_extrude_linear_extension(
                             (
                                 ($b_inner_length - $b_corner_radius * 2)
-                                - ($b_rib_width * (2 - 1))
+                                - ($b_side_rib_width / 2)
                             ) / 2
                             + rb_side_rib_positions()[idx] * (idx == 0 ? 1 : -1)
                         );
@@ -859,7 +878,7 @@ module _box_corners_extrude(
                             ])
                             rotate_extrude(angle=90)
                             children();
-                            translate([0, 0, $b_wall_thickness])
+                            translate([0, 0, $b_floor_thickness])
                             linear_extrude(height=$b_outer_height)
                             square($b_corner_radius + $b_wall_thickness / 2);
                         }
@@ -898,7 +917,7 @@ module _box_extrude(size_offset=0) {
 module _box_wall_inner_chamfer_shape() {
     translate([-$b_wall_thickness, 0])
     difference() {
-        translate([0, $b_wall_thickness])
+        translate([0, $b_floor_thickness])
         square([$b_corner_radius + $b_wall_thickness, $b_outer_height]);
         translate([0, $b_wall_thickness * 0.1])
         _box_wall_outer_chamfer_shape();
@@ -925,7 +944,7 @@ module _box_wall_outer_chamfer_shape() {
 module _box_wall_interior_shape() {
     translate([-$b_wall_thickness, 0])
     difference() {
-        translate([0, $b_wall_thickness])
+        translate([0, $b_floor_thickness])
         square([$b_corner_radius + $b_wall_thickness, $b_outer_height]);
         translate([0, $b_wall_thickness * 0.1])
         _box_wall_outer_chamfer_shape();
@@ -949,20 +968,20 @@ module _box_wall_shape(reinforced=false) {
         _box_wall_interior_shape();
     }
     // Square inner floor edge
-    square([$b_wall_thickness * 2/3, min($b_outer_height, $b_wall_thickness)]);
+    square([$b_wall_thickness * 2/3, min($b_outer_height, $b_floor_thickness)]);
 }
 
 module _box_interior_shape(cut_height=0) {
     intersection() {
         difference() {
-            translate([$b_wall_thickness / 2, -$b_wall_thickness / 2])
+            translate([$b_wall_thickness / 2, -$b_floor_thickness / 2])
             _box_wall_inner_chamfer_shape();
             _box_wall_shape(reinforced=true);
         }
-        translate([0, $b_wall_thickness])
+        translate([0, $b_floor_thickness])
         square([
             $b_corner_radius + $b_edge_radius,
-            (cut_height > 0) ? cut_height : $b_outer_height - $b_wall_thickness
+            (cut_height > 0) ? cut_height : $b_outer_height - $b_floor_thickness
         ]);
     }
 }
@@ -1097,11 +1116,16 @@ module _box_rib(width=$b_rib_width) {
 }
 
 module _box_plain_rib() {
-    _box_rib_angle(plain_ribs_angle)
-    _box_rib($b_rib_width * 2);
+    _box_rib_angle($b_side_rib_angle)
+    _box_rib($b_side_rib_width);
 }
 
 module _box_ribs() {
+    if ($b_part != "top" || $b_side_ribs_on_top)
+    _box_ribs_all();
+}
+
+module _box_ribs_all() {
     // Side ribs
     for (mx = [0:1:1], py = rb_side_rib_positions()) {
         mirror([mx, 0, 0])
@@ -1126,7 +1150,7 @@ module _box_attachment_rib_cut(width=0) {
     difference() {
         for (mx = [0:1:1]) {
             x = ($b_corner_radius + $b_wall_thickness) * 2;
-            translate([-x / 2, $b_wall_thickness])
+            translate([-x / 2, $b_floor_thickness])
             square([x, $b_outer_height]);
         }
         translate([0, $b_wall_thickness * 0.1])

@@ -86,13 +86,44 @@ Latch_Screw_Separation = 16; // [5:1:40]
 // Width in millimeters subtracted from latches for fit
 Size_Tolerance = 0.20; // [0:0.01:1]
 
+/* [Filament Saving] */
+// Thickness in millimeters of the box top and bottom floors. Set to 0 to use the wall thickness.
+Floor_Thickness = 0; // [0:0.1:10]
+
+// Extra interior space in millimeters around the Gridfinity grid (total, both sides). Set to 0 to make the walls act as the outer edge of the Gridfinity baseplate.
+Interior_Border = 5; // [0:0.5:20]
+
+// Include the outer edge of the Gridfinity baseplate along the box walls. Disabling this removes the baseplate edge profile next to the walls (best with Interior_Border = 0, where the walls locate the bins), leaving only small pieces in the corners. Not used with Gridfinity_Stackable.
+Baseplate_Outer_Frame = true;
+
+// Number of plain ribs on each side of the box. -1 places one rib per Gridfinity unit; 0 removes the side ribs.
+Side_Rib_Count = -1; // [-1:1:10]
+
+// When using one rib per Gridfinity unit, skip this many units between each rib. Remaining ribs are centered.
+Side_Rib_Skip = 0; // [0:1:9]
+
+// Number of plain ribs on the rear of the box between the hinges. -1 places one rib per inner Gridfinity unit; 0 removes the rear ribs.
+Rear_Rib_Count = -1; // [-1:1:10]
+
+// Width in millimeters of the plain side and rear ribs. Set to 0 to use twice the rib width.
+Side_Rib_Width = 0; // [0:0.1:30]
+
+// Taper angle of the plain side and rear ribs (0 for straight ribs)
+Side_Rib_Angle = 8; // [0:1:30]
+
+// Add the plain side and rear ribs to the box top
+Side_Ribs_On_Top = true;
+
+// With reinforced corners, extend the thick corners along the walls to the nearest ribs, latches, and hinges
+Reinforced_Corner_Extensions = true;
+
 module __end_customizer_options__() { }
 
 // Constants
 
 edge_chamfer_proportion = 0.95;
 
-border = 5;
+border = Interior_Border;
 gridfinity_height_increment = 7;
 
 width = Width * l_grid + border;
@@ -116,15 +147,45 @@ stacking_separation = Gridfinity_Stackable ? 1.6 : 0;
 
 function rb_color(part) = (part == "top" ? "LightSteelBlue" : "SteelBlue");
 
-function rb_side_rib_positions() = [
-    for (j = [for (i = [0:1:Length - 1]) i * l_grid])
-    j - (l_grid * (Length / 2 - 0.5))
-];
+// Evenly distribute count ribs between the first and last positions
+function _rib_spread(count, first, last) = (
+    count <= 0
+        ? []
+        : count == 1
+            ? [(first + last) / 2]
+            : [for (i = [0:1:count - 1]) first + (last - first) * i / (count - 1)]
+);
 
-function rb_rear_rib_positions() = [
-    for (j = [for (i = [1:1:Width - 2]) i * l_grid])
-    j - (l_grid * (Width / 2 - 0.5))
-];
+function rb_side_rib_positions() = (
+    let (
+        first = -l_grid * (Length / 2 - 0.5),
+        last = l_grid * (Length / 2 - 0.5),
+        step = Side_Rib_Skip + 1,
+        // Center the remaining ribs when skipping
+        offset = ((Length - 1) % step) / 2
+    )
+    Side_Rib_Count >= 0
+        ? _rib_spread(Side_Rib_Count, first, last)
+        : [
+            for (i = [0:step:Length - 1])
+            (i + offset) * l_grid + first
+        ]
+);
+
+function rb_rear_rib_positions() = (
+    Width < 3
+        ? []
+        : Rear_Rib_Count >= 0
+        ? _rib_spread(
+            Rear_Rib_Count,
+            -l_grid * (Width / 2 - 1.5),
+            l_grid * (Width / 2 - 1.5)
+        )
+        : [
+            for (j = [for (i = [1:1:Width - 2]) i * l_grid])
+            j - (l_grid * (Width / 2 - 0.5))
+        ]
+);
 
 function rb_latch_hinge_position() = (l_grid * (Width / 2 - 0.5));
 
@@ -248,8 +309,40 @@ module custom_bottom() {
     } else {
         rbox_body();
         rbox_for_interior() {
-            gridfinity_baseplate();
+            if (Baseplate_Outer_Frame) {
+                gridfinity_baseplate();
+            } else {
+                difference() {
+                    gridfinity_baseplate();
+                    gridfinity_baseplate_outer_frame_cut();
+                }
+            }
         }
+    }
+}
+
+// Band along the outer edge of the baseplate covering its outer pocket profile
+module gridfinity_baseplate_outer_frame_cut() {
+    frame = 2.85;  // Horizontal depth of the Gridfinity baseplate profile
+    translate([0, 0, -1])
+    linear_extrude(height=h_base * 3)
+    difference() {
+        square([Width * l_grid + border + 20, Length * l_grid + border + 20], center=true);
+        offset(r=r_base - frame)
+        square(
+            [
+                Width * l_grid - (r_base - frame) * 2 - frame * 2,
+                Length * l_grid - (r_base - frame) * 2 - frame * 2
+            ],
+            center=true
+        );
+        // Keep the interior grid lines running all the way to the walls
+        for (i = [1:1:Width - 1])
+        translate([(i - Width / 2) * l_grid, 0])
+        square([frame * 2 + 1, Length * l_grid + border + 20], center=true);
+        for (i = [1:1:Length - 1])
+        translate([0, (i - Length / 2) * l_grid])
+        square([Width * l_grid + border + 20, frame * 2 + 1], center=true);
     }
 }
 
@@ -353,7 +446,12 @@ module main() {
         latch_screw_separation=Latch_Screw_Separation,
         third_hinge_width=Third_Hinge ? (l_grid * 5) : 0,
         stacking_separation=stacking_separation,
-        size_tolerance=Size_Tolerance
+        size_tolerance=Size_Tolerance,
+        floor_thickness=Floor_Thickness,
+        side_rib_width=Side_Rib_Width,
+        side_rib_angle=Side_Rib_Angle,
+        corner_extensions=Reinforced_Corner_Extensions,
+        side_ribs_on_top=Side_Ribs_On_Top
     ) {
         gridfinity_box_part()
         rbox_part(Part) {

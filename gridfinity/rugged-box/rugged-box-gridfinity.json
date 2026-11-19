@@ -1,0 +1,41 @@
+{
+    "parameterSets": {
+        "Light (filament saving)": {
+            "Gridfinity_Stackable": "false",
+            "Stacking_Latches": "false",
+            "Reinforced_Corners": "false",
+            "Wall_Thickness": "2.4",
+            "Lip_Thickness": "1.9",
+            "Rib_Width": "3.2",
+            "Floor_Thickness": "1.2",
+            "Interior_Border": "0",
+            "Baseplate_Outer_Frame": "false",
+            "Side_Rib_Count": "2",
+            "Side_Rib_Skip": "0",
+            "Rear_Rib_Count": "0",
+            "Side_Rib_Width": "5",
+            "Side_Rib_Angle": "0",
+            "Side_Ribs_On_Top": "false",
+            "Reinforced_Corner_Extensions": "false"
+        },
+        "Light, keep side ribs every other unit": {
+            "Gridfinity_Stackable": "false",
+            "Stacking_Latches": "false",
+            "Reinforced_Corners": "false",
+            "Wall_Thickness": "2.4",
+            "Lip_Thickness": "1.9",
+            "Rib_Width": "3.2",
+            "Floor_Thickness": "1.2",
+            "Interior_Border": "0",
+            "Baseplate_Outer_Frame": "false",
+            "Side_Rib_Count": "-1",
+            "Side_Rib_Skip": "1",
+            "Rear_Rib_Count": "0",
+            "Side_Rib_Width": "5",
+            "Side_Rib_Angle": "0",
+            "Side_Ribs_On_Top": "false",
+            "Reinforced_Corner_Extensions": "false"
+        }
+    },
+    "fileFormatVersion": "1"
+}
