@@ -226,7 +226,7 @@ separate label part.
 ### "Greg" preset and web generator
 
 The **Greg** preset in `rugged-box-gridfinity.json` is the Light preset with
-a flat label pad for 24mm-or-smaller label maker tape, three side ribs, and
+a flat label pad with a 0.4mm deep recess for 24mm-or-smaller label maker tape, three side ribs, and
 every other setting pinned explicitly (latch type, seal, base style, latch
 size, tolerance, and so on). Boxes made from it stay consistent even if the
 customizer defaults change later.

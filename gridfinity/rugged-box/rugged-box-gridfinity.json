@@ -11,7 +11,7 @@
             "Label": "true",
             "Label_Style": "flat",
             "Label_Flat_Height": "24",
-            "Label_Recess_Depth": "0",
+            "Label_Recess_Depth": "0.4",
             "Label_Text": "",
             "Label_Text_Size": "10",
             "Latch_Width": "28",
