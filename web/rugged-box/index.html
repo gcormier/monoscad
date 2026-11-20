@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Greg's Rugged Box</title>
+<meta name="description" content="Gridfinity rugged storage box generator with a pinned, filament-saving preset. Prebuilt 3MF kits open straight in Bambu Studio.">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Greg's Rugged Box</h1>
+    <p class="lede">
+      A Gridfinity rugged storage box with one fixed set of design choices, so every box and its bins match.
+      The <b>Greg</b> preset is the filament-saving "Light" style: 1.2&nbsp;mm floor, no interior border,
+      thinner walls, two slim side ribs, and no stacking plates.
+    </p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="catalog-section" class="card">
+    <div class="section-head">
+      <h2>Prebuilt kits</h2>
+      <span class="meta" id="build-meta"></span>
+    </div>
+    <p class="hint">
+      Each kit is one 3MF holding the bottom, top, latches, handle and label as separate objects.
+      <b>Open in Bambu Studio</b> needs Bambu Studio installed on this computer. After it opens, use Arrange,
+      or split the parts across plates.
+    </p>
+    <div class="filters">
+      <label>Width <select id="f-width"><option value="">Any</option></select></label>
+      <label>Length <select id="f-length"><option value="">Any</option></select></label>
+    </div>
+    <div class="table-scroll">
+      <table id="catalog">
+        <thead>
+          <tr><th>Size (W×L)</th><th>Bottom</th><th>Top</th><th>Interior (mm)</th><th>File</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="empty hidden" id="catalog-empty">No prebuilt kits in this build. Use the generator below.</p>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <h2>Custom size</h2>
+      <span class="meta">Rendered in your browser. Expect about 1–3 minutes per box.</span>
+    </div>
+
+    <form id="gen" autocomplete="off">
+      <div class="grid4">
+        <label>Width (42&nbsp;mm units)<input type="number" name="Width" min="1" max="10" value="3" required></label>
+        <label>Length (42&nbsp;mm units)<input type="number" name="Length" min="1" max="10" value="3" required></label>
+        <label>Bottom height (7&nbsp;mm units)<input type="number" name="Bottom_Height" min="1" max="30" value="6" required></label>
+        <label>Top height (7&nbsp;mm units)<input type="number" name="Top_Height" min="1" max="10" value="2" required></label>
+      </div>
+      <div class="dims" id="dims"></div>
+
+      <fieldset class="parts">
+        <legend>Parts</legend>
+        <label><input type="checkbox" name="part" value="bottom" checked> Bottom</label>
+        <label><input type="checkbox" name="part" value="top" checked> Top</label>
+        <label><input type="checkbox" name="part" value="latch" checked> Latch <span class="meta" id="latch-count"></span></label>
+        <label><input type="checkbox" name="part" value="handle"> Handle</label>
+      </fieldset>
+
+      <details id="advanced">
+        <summary>Greg preset values <span class="meta" id="adv-count"></span></summary>
+        <p class="hint">
+          These are pinned so your boxes stay consistent. Changing one here affects only this render.
+          Changed fields are highlighted.
+        </p>
+        <div class="adv-grid" id="adv"></div>
+        <button type="button" class="ghost" id="adv-reset">Reset to Greg preset</button>
+      </details>
+
+      <div class="actions">
+        <button type="submit" id="render-btn">Render</button>
+        <button type="button" class="ghost" id="share-btn">Copy link to this size</button>
+        <span id="prebuilt-hint" class="hint"></span>
+      </div>
+    </form>
+
+    <div class="out hidden" id="out">
+      <div class="viewer" id="viewer"><div class="viewer-msg" id="viewer-msg"></div></div>
+      <div class="side">
+        <ol id="progress"></ol>
+        <div class="downloads" id="downloads"></div>
+        <details class="log"><summary>OpenSCAD log</summary><pre id="log"></pre></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="card small">
+    <h2>Notes</h2>
+    <ul>
+      <li>Bins: standard Gridfinity. The interior is exactly W×42&nbsp;mm by L×42&nbsp;mm with no border, so the walls hold the bins in place.</li>
+      <li>Hinges and latches: the same hardware and filament pins as the original rugged box.</li>
+      <li>Open in Bambu Studio works only for prebuilt kits, because Bambu Studio has to download the file from a URL. For a custom render, download the 3MF and double-click it.</li>
+      <li>Source: <a href="https://github.com/gcormier/monoscad/tree/greg/gridfinity/rugged-box">gcormier/monoscad</a>, a fork of
+        <a href="https://github.com/smkent/monoscad/tree/main/gridfinity/rugged-box">smkent's Gridfinity rugged box</a> (CC BY-SA 4.0).</li>
+    </ul>
+  </section>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

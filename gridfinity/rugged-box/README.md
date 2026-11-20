@@ -213,6 +213,25 @@ The ribs and corners hold a lot of volume, but slicers fill most of it with
 sparse infill, so they save less filament than the floor, wall and border
 changes.
 
+### "Greg" preset and web generator
+
+The **Greg** preset in `rugged-box-gridfinity.json` is the Light preset with
+every other setting pinned explicitly (latch type, seal, base style, latch
+size, tolerance, and so on). Boxes made from it stay consistent even if the
+customizer defaults change later.
+
+The [web generator](https://gcormier.github.io/monoscad/rugged-box/) is built
+by `.github/workflows/pages.yml` from the `greg` branch. It has:
+
+* A catalog of prebuilt 3MF kits in common sizes, listed in `web/catalog.json`.
+  Each kit holds the bottom, top, latches, handle and label as separate
+  objects. The kits are rendered in CI with OpenSCAD nightly, and an **Open in
+  Bambu Studio** link opens each one directly.
+* A custom-size generator that runs OpenSCAD (WebAssembly) in the browser
+  with the Greg preset, and exports a kit 3MF or per-part STLs.
+
+See `web/README.md` to build the site locally.
+
 ## Printing
 
 ### Printer preparation

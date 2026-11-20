@@ -1,0 +1,97 @@
+name: Rugged box site
+
+on:
+  push:
+    branches:
+      - greg
+    paths:
+      - "web/**"
+      - "gridfinity/rugged-box/**"
+      - "rugged-box/**"
+      - "libraries"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+    inputs:
+      skip_catalog:
+        description: "Skip rendering the prebuilt 3MF catalog"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # OpenSCAD WebAssembly build used by the in-browser generator
+  OPENSCAD_WASM_URL: https://files.openscad.org/playground/OpenSCAD-2025.03.25.wasm24456-WebAssembly-web.zip
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: 💾 Check out repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: 🛠️ Install OpenSCAD nightly
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-liberation fontconfig
+          name=$(curl -fsSL https://files.openscad.org/snapshots/ \
+            | grep -oE 'OpenSCAD-[0-9.]+-x86_64\.AppImage' | sort -uV | tail -1)
+          echo "Using $name"
+          curl -fsSL -o /tmp/openscad.AppImage "https://files.openscad.org/snapshots/$name"
+          chmod +x /tmp/openscad.AppImage
+          cd /tmp && ./openscad.AppImage --appimage-extract >/dev/null
+          /tmp/squashfs-root/AppRun --version
+
+      - name: 🌐 Download OpenSCAD WebAssembly
+        run: |
+          curl -fsSL -o /tmp/openscad-wasm.zip "$OPENSCAD_WASM_URL"
+          mkdir -p /tmp/openscad-wasm
+          unzip -q /tmp/openscad-wasm.zip -d /tmp/openscad-wasm
+          ls -la /tmp/openscad-wasm
+
+      - name: 🗃️ Cache rendered kits
+        uses: actions/cache@v6
+        with:
+          path: .models-cache
+          key: kits-${{ hashFiles('gridfinity/rugged-box/*.scad', 'gridfinity/rugged-box/*.json', 'rugged-box/*.scad', 'libraries/gridfinity-rebuilt-openscad/*.scad', 'web/catalog.json', 'web/build_site.py') }}
+          restore-keys: kits-
+
+      - name: 🏗️ Build site
+        run: |
+          python3 web/build_site.py \
+            --out _site \
+            --openscad /tmp/squashfs-root/AppRun \
+            --wasm-dir /tmp/openscad-wasm \
+            --models-cache .models-cache \
+            ${{ inputs.skip_catalog && '--skip-catalog' || '' }}
+          du -sh _site
+          ls -la _site/rugged-box/models || true
+
+      - name: 📦 Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}rugged-box/
+    steps:
+      - name: 🚀 Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
