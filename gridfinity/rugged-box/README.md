@@ -180,7 +180,8 @@ drop-down:
 | --- | --- | --- | --- |
 | **Floor Thickness** | 0 (= wall thickness) | 1.2 | Thickness of the top and bottom floors. This has the biggest effect. |
 | **Interior Border** | 5 | 0 | Extra space around the Gridfinity grid. At 0, the box walls act as the outer edge of the baseplate. |
-| **Baseplate Outer Frame** | on | off | Removes the baseplate edge profile along the walls, so only small pieces remain in the corners. Use with Interior Border 0. Not used with Gridfinity Stackable. |
+| **Baseplate Outer Frame** | on | on | Off removes the baseplate edge profile along the whole length of every wall. Use with Interior Border 0. Not used with Gridfinity Stackable. |
+| **Baseplate Corner Cut** | 0 | 31 | Removes the baseplate edge and the wall fillet in each inside corner, this many millimeters along each wall, like the Light remix. Not used with Gridfinity Stackable. |
 | **Side Rib Count** | -1 (one per unit) | 2 | Number of plain ribs per side, spread evenly from the first to the last Gridfinity unit. 0 removes them. |
 | **Side Rib Skip** | 0 | 0 | With Side Rib Count -1, skip this many units between ribs. The remaining ribs are centered. |
 | **Rear Rib Count** | -1 (one per inner unit) | 0 | Number of plain ribs on the rear between the hinges. |

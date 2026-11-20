@@ -105,6 +105,9 @@ Interior_Border = 5; // [0:0.5:20]
 // Include the outer edge of the Gridfinity baseplate along the box walls. Disabling this removes the baseplate edge profile next to the walls (best with Interior_Border = 0, where the walls locate the bins), leaving only small pieces in the corners. Not used with Gridfinity_Stackable.
 Baseplate_Outer_Frame = true;
 
+// Remove the Gridfinity baseplate edge and the wall fillet in each inside corner of the box bottom, this many millimeters along each wall from the corner (31 matches the "Light" remix). 0 keeps them. Not used with Gridfinity_Stackable.
+Baseplate_Corner_Cut = 0; // [0:1:42]
+
 // Number of plain ribs on each side of the box. -1 places one rib per Gridfinity unit; 0 removes the side ribs.
 Side_Rib_Count = -1; // [-1:1:10]
 
@@ -316,17 +319,39 @@ module custom_bottom() {
             gridfinity_baseplate_cut();
         }
     } else {
-        rbox_body();
-        rbox_for_interior() {
-            if (Baseplate_Outer_Frame) {
-                gridfinity_baseplate();
-            } else {
-                difference() {
-                    gridfinity_baseplate();
-                    gridfinity_baseplate_outer_frame_cut();
-                }
-            }
+        difference() {
+            rbox_body();
+            if (Baseplate_Corner_Cut > 0)
+            rbox_for_interior()
+            baseplate_corner_cut_volume(h_base * 2);
         }
+        rbox_for_interior()
+        difference() {
+            gridfinity_baseplate();
+            if (!Baseplate_Outer_Frame)
+            gridfinity_baseplate_outer_frame_cut();
+            if (Baseplate_Corner_Cut > 0)
+            translate([0, 0, -1])
+            baseplate_corner_cut_volume(h_base * 3);
+        }
+    }
+}
+
+// Square regions in each inside corner of the box interior, clipped to the
+// interior so the walls are not cut
+module baseplate_corner_cut_volume(height) {
+    w = Width * l_grid + border;
+    l = Length * l_grid + border;
+    c = Baseplate_Corner_Cut;
+    linear_extrude(height=height)
+    intersection() {
+        offset(r=corner_radius)
+        square([w - corner_radius * 2, l - corner_radius * 2], center=true);
+        for (mx = [0, 1], my = [0, 1])
+        mirror([mx, 0])
+        mirror([0, my])
+        translate([w / 2 - c, l / 2 - c])
+        square([c + 1, c + 1]);
     }
 }
 
