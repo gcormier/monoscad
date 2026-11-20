@@ -72,10 +72,18 @@ const viewer = (() => {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(35, 4 / 3, 1, 5000);
     camera.up.set(0, 0, 1);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.6));
-    const d = new THREE.DirectionalLight(0xffffff, 1.6);
-    d.position.set(1, -1.5, 2);
-    scene.add(d);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8090a0, 1.4));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    const key = new THREE.DirectionalLight(0xffffff, 1.8);
+    key.position.set(1, -1.5, 2);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.7);
+    fill.position.set(-1.5, 1, 0.8);
+    // Lights follow the camera so every side stays readable while orbiting
+    for (const l of [key, fill]) {
+      l.target.position.set(0, 0, -1);
+      camera.add(l, l.target);
+    }
+    scene.add(camera);
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     group = new THREE.Group();
@@ -99,14 +107,16 @@ const viewer = (() => {
     if (box.isEmpty()) return;
     const c = box.getCenter(new THREE.Vector3());
     const r = box.getSize(new THREE.Vector3()).length() / 2;
-    const dist = r / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.9;
+    const dist = r / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.62;
     camera.position.copy(c).add(new THREE.Vector3(0.55, -1, 0.75).normalize().multiplyScalar(dist));
     camera.near = dist / 100;
     camera.far = dist * 10;
     camera.updateProjectionMatrix();
     controls.target.copy(c);
   }
-  const colors = [0x4682b4, 0xb0c4de, 0xe0a040, 0x7fb069, 0xc07090];
+  const colors = [0x4f8fd0, 0x9fbbe0, 0xe0a040, 0x7fb069, 0xc07090, 0x8a8fd8];
+  const material = (i) =>
+    new THREE.MeshStandardMaterial({ color: colors[i % colors.length], roughness: 0.75, metalness: 0.0, flatShading: true });
   return {
     message(t) {
       msg.textContent = t || "";
@@ -124,7 +134,8 @@ const viewer = (() => {
       const prev = new THREE.Box3().setFromObject(group);
       const x0 = prev.isEmpty() ? 0 : prev.max.x + 10;
       geo.translate(x0 - bb.min.x, -(bb.min.y + bb.max.y) / 2, -bb.min.z);
-      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: colors[i % colors.length], roughness: 0.7, metalness: 0.05 }));
+      if (!geo.getAttribute("normal")) geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, material(i));
       group.add(mesh);
       frame();
     },
@@ -133,8 +144,13 @@ const viewer = (() => {
       this.clear();
       this.message("Loading preview…");
       const obj = await new ThreeMFLoader().loadAsync(url);
+      // 3MF meshes come without normals; lit materials render black without them
+      let i = 0;
       obj.traverse((o) => {
-        if (o.isMesh) o.material = new THREE.MeshStandardMaterial({ color: 0x4682b4, roughness: 0.7 });
+        if (!o.isMesh) return;
+        o.geometry = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry;
+        o.geometry.computeVertexNormals();
+        o.material = material(i++);
       });
       group.add(obj);
       frame();
@@ -455,6 +471,13 @@ async function init() {
   markChanged();
   renderCatalog();
   updateDims();
+  // ?preview=4x3x6x1 opens that prebuilt kit's preview
+  const pv = new URLSearchParams(location.search).get("preview");
+  if (pv) {
+    const [w, l, b, t] = pv.split("x").map(Number);
+    const k = (manifest.kits || []).find((k) => k.width === w && k.length === l && k.bottom_height === b && k.top_height === t);
+    if (k) previewKit(k);
+  }
   form.addEventListener("input", updateDims);
   form.addEventListener("submit", onRender);
   $("#adv-reset").onclick = () => { buildAdvanced(); markChanged(); };
