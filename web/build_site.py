@@ -171,7 +171,7 @@ def mesh_volume(verts, tris):
 # --------------------------------------------------------------------------
 
 
-def render_part(openscad, preset, size, part, out_stl):
+def render_part(openscad, preset, size, part, out_stl, extra=()):
     w, l, bh, th = size
     cmd = [
         *openscad,
@@ -183,6 +183,7 @@ def render_part(openscad, preset, size, part, out_stl):
         "-D", f"Length={l}",
         "-D", f"Bottom_Height={bh}",
         "-D", f"Top_Height={th}",
+        *[x for d in extra for x in ("-D", d)],
         "--backend=Manifold",
         "--export-format=binstl",
         "-o", str(out_stl),
@@ -245,6 +246,35 @@ def build_kit(openscad, preset, size, parts, models_dir, cache_dir):
         meta_path.write_text(json.dumps(meta))
     log(f"  built {name} ({', '.join(info)})")
     return meta
+
+
+def build_latches(openscad, preset, site, cache):
+    """
+    Prebuild the latch for each latch type. The latch does not depend on the
+    box size, and its minkowski() edge chamfer is too slow for the in-browser
+    WebAssembly build, so the generator uses these when the latch settings
+    match the preset.
+    """
+    out = {}
+    (site / "latches").mkdir(parents=True, exist_ok=True)
+    for latch_type in ("draw", "clip"):
+        name = f"latch-{latch_type}.stl"
+        dst = site / "latches" / name
+        if cache and (cache / name).exists():
+            shutil.copy2(cache / name, dst)
+        else:
+            with tempfile.TemporaryDirectory(dir=TMP_DIR) as td:
+                stl = Path(td) / name
+                ok, _ = render_part(openscad, preset, (3, 3, 6, 1), "latch",
+                                    stl, [f'Latch_Type="{latch_type}"'])
+                if not ok:
+                    continue
+                shutil.copy2(stl, dst)
+            if cache:
+                shutil.copy2(dst, cache / name)
+        out[latch_type] = f"latches/{name}"
+    log(f"  latches: {', '.join(out)}")
+    return out
 
 
 def source_hash(preset):
@@ -317,18 +347,20 @@ def main():
         "kits": [],
     }
 
+    cache = None
+    if args.models_cache:
+        cache = Path(args.models_cache) / manifest["source_hash"]
+        cache.mkdir(parents=True, exist_ok=True)
+        # Drop parts rendered from older sources
+        for old in Path(args.models_cache).iterdir():
+            if old.is_dir() and old != cache:
+                shutil.rmtree(old)
+    openscad = args.openscad.split()
+    manifest["latches"] = build_latches(openscad, preset, site, cache)
+
     if not args.skip_catalog and sizes:
         models = site / "models"
         models.mkdir(parents=True, exist_ok=True)
-        cache = None
-        if args.models_cache:
-            cache = Path(args.models_cache) / manifest["source_hash"]
-            cache.mkdir(parents=True, exist_ok=True)
-            # Drop kits rendered from older sources
-            for old in Path(args.models_cache).iterdir():
-                if old.is_dir() and old != cache:
-                    shutil.rmtree(old)
-        openscad = args.openscad.split()
         log(f"Rendering {len(sizes)} kits with {args.jobs} jobs ...")
         with cf.ThreadPoolExecutor(args.jobs) as ex:
             futs = [

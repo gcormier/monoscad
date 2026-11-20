@@ -337,6 +337,32 @@ function renderPart(part, defines) {
   });
 }
 
+// The latch is the same for every box size, and its minkowski() chamfer is
+// too slow for the WebAssembly build, so use the CI-prebuilt one when the
+// only changed preset value is the latch type.
+function prebuiltLatchUrl() {
+  const diff = changedAdv();
+  const other = Object.keys(diff).filter((k) => k !== "Latch_Type");
+  if (other.length) return null;
+  const type = diff.Latch_Type || manifest.preset_values.Latch_Type || "draw";
+  return (manifest.latches || {})[type] || null;
+}
+
+async function renderOrFetch(part, defines) {
+  const url = part === "latch" ? prebuiltLatchUrl() : null;
+  if (url) {
+    const t0 = performance.now();
+    try {
+      const r = await fetch(url);
+      if (r.ok) {
+        const stl = await r.arrayBuffer();
+        return { ok: true, stl, secs: (performance.now() - t0) / 1000, log: [`Using prebuilt ${url}`], prebuilt: true };
+      }
+    } catch (_) { /* fall back to rendering */ }
+  }
+  return renderPart(part, defines);
+}
+
 let busy = false;
 async function onRender(ev) {
   ev.preventDefault();
@@ -370,19 +396,23 @@ async function onRender(ev) {
     viewer.message(done.length ? "" : `Rendering ${part}…`);
     const t0 = performance.now();
     const tick = setInterval(() => (li.textContent = `${part}: ${Math.round((performance.now() - t0) / 1000)} s`), 1000);
-    const res = await renderPart(part, defines);
+    const res = await renderOrFetch(part, defines);
     if (!res.ok && res.log.some((l) => /top level object is empty/i.test(l))) res.empty = true;
     clearInterval(tick);
     logEl.textContent += `--- ${part} ---\n${res.log.join("\n")}\n`;
     if (res.ok) {
       li.className = "ok";
-      li.textContent = `${part}: done in ${Math.round(res.secs)} s`;
+      li.textContent = res.prebuilt ? `${part}: prebuilt` : `${part}: done in ${Math.round(res.secs)} s`;
       done.push({ part, stl: res.stl });
       viewer.addSTL(res.stl, i);
       viewer.message("");
     } else {
       li.className = "err";
-      li.textContent = res.empty ? `${part}: not used for this size` : `${part}: failed (see log)`;
+      li.textContent = res.empty
+        ? `${part}: not used for this size`
+        : part === "latch"
+          ? `${part}: failed. Changed latch settings must render in the browser, which is very slow; use the Greg latch settings or render the latch locally.`
+          : `${part}: failed (see log)`;
     }
   }
 
