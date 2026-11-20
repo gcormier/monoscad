@@ -108,12 +108,6 @@ Baseplate_Outer_Frame = true;
 // Remove the Gridfinity baseplate edge and the wall fillet in each inside corner of the box bottom, this many millimeters along each wall from the corner (31 matches the "Light" remix). 0 keeps them. Not used with Gridfinity_Stackable.
 Baseplate_Corner_Cut = 0; // [0:1:42]
 
-// Lower the Gridfinity baseplate ridges in a smooth dip between grid intersections, this many millimeters long per 42 mm segment. Bins still locate on the full-height posts at each intersection. 0 keeps full-height ridges. Not used with Gridfinity_Stackable.
-Baseplate_Ridge_Swoop = 0; // [0:1:36]
-
-// Height in millimeters the baseplate ridges keep at the lowest point of each dip. 0 dips all the way to the floor.
-Baseplate_Ridge_Swoop_Min = 0; // [0:0.1:4]
-
 // Number of plain ribs on each side of the box. -1 places one rib per Gridfinity unit; 0 removes the side ribs.
 Side_Rib_Count = -1; // [-1:1:10]
 
@@ -339,8 +333,6 @@ module custom_bottom() {
             if (Baseplate_Corner_Cut > 0)
             translate([0, 0, -1])
             baseplate_corner_cut_volume(h_base * 3);
-            if (Baseplate_Ridge_Swoop > 0)
-            baseplate_ridge_swoop_volume();
         }
     }
 }
@@ -360,41 +352,6 @@ module baseplate_corner_cut_volume(height) {
         mirror([0, my])
         translate([w / 2 - c, l / 2 - c])
         square([c + 1, c + 1]);
-    }
-}
-
-// Smooth dips cut into each baseplate ridge segment between intersections
-module baseplate_ridge_swoop_volume() {
-    s = Baseplate_Ridge_Swoop;
-    z0 = Baseplate_Ridge_Swoop_Min;
-    h = h_base * 2;         // Above the top of the ridges
-    t = l_grid / 2;          // Thick enough to cover a ridge and its frame
-    module dip() {
-        // Elliptical arch in the plane of the ridge: full height at the
-        // ends, flat at z0 in the middle
-        rotate([90, 0, 0])
-        linear_extrude(height=t, center=true)
-        hull() {
-            for (sx = [-1, 1])
-            translate([sx * s / 6, z0 + (h - z0)])
-            scale([s / 3, h - z0])
-            circle(r=1, $fn=64);
-        }
-    }
-    // Ridges running along Y (grid lines at constant X, including the frame)
-    for (i = [0:1:Width], j = [0:1:Length - 1])
-    translate([(i - Width / 2) * l_grid, (j + 0.5 - Length / 2) * l_grid, 0])
-    rotate([0, 0, 90])
-    intersection() {
-        dip();
-        cube([l_grid, t / 2, h * 4], center=true);
-    }
-    // Ridges running along X
-    for (j = [0:1:Length], i = [0:1:Width - 1])
-    translate([(i + 0.5 - Width / 2) * l_grid, (j - Length / 2) * l_grid, 0])
-    intersection() {
-        dip();
-        cube([l_grid, t / 2, h * 4], center=true);
     }
 }
 
