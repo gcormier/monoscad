@@ -3,9 +3,7 @@
     "parts": [
         "bottom",
         "top",
-        "latch",
-        "handle",
-        "label"
+        "latch"
     ],
     "sizes": [
         [

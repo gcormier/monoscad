@@ -7,7 +7,7 @@
             "Hinge_End_Stops": "true",
             "Latch_Type": "draw",
             "Third_Hinge": "true",
-            "Handle": "true",
+            "Handle": "false",
             "Label": "true",
             "Label_Style": "flat",
             "Label_Flat_Height": "24",
