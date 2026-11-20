@@ -23,7 +23,7 @@
             "Floor_Thickness": "1.2",
             "Interior_Border": "0",
             "Baseplate_Outer_Frame": "false",
-            "Side_Rib_Count": "2",
+            "Side_Rib_Count": "3",
             "Side_Rib_Skip": "0",
             "Rear_Rib_Count": "0",
             "Side_Rib_Width": "5",
