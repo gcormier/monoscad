@@ -61,6 +61,15 @@ Handle = true;
 // Optional label for sufficiently wide boxes
 Label = true;
 
+// Label style. Flat makes a flat pad on the box front for stick-on labels, such as label maker tape.
+Label_Style = "slide"; // [slide: Slide-in printed label, flat: Flat area for stick-on labels]
+
+// With the flat label style, tallest label in millimeters the flat area should fit. Brother TZe tape widths are 3.5, 6, 9, 12, 18, 24 and 36.
+Label_Flat_Height = 12; // [3.5:0.5:36]
+
+// With the flat label style, depth in millimeters of an optional recess for the label. 0 keeps the area flat.
+Label_Recess_Depth = 0; // [0:0.1:1.5]
+
 // Custom text for optional label
 Label_Text = "Label";
 
@@ -436,7 +445,10 @@ module main() {
         handle=Handle,
         label=Label,
         label_text=Label_Text,
-        label_text_size=Label_Text_Size
+        label_text_size=Label_Text_Size,
+        label_style=Label_Style,
+        label_flat_height=Label_Flat_Height,
+        label_recess_depth=Label_Recess_Depth
     )
     rbox_size_adjustments(
         wall_thickness=Wall_Thickness,

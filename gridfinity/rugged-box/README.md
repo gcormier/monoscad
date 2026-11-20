@@ -213,9 +213,20 @@ The ribs and corners hold a lot of volume, but slicers fill most of it with
 sparse infill, so they save less filament than the floor, wall and border
 changes.
 
+### Flat label area
+
+**Label Style** "flat" replaces the slide-in label holder with a thickened,
+flat pad on the front of the box bottom for stick-on labels, such as Brother
+P-touch TZe label maker tape (3.5, 6, 9, 12, 18, 24 and 36mm). **Label Flat
+Height** sets the tallest label the pad should fit; on short boxes the pad
+shrinks to fit. **Label Recess Depth** optionally adds a shallow recess in the
+pad to locate the label (0 keeps it flat). With the flat style there is no
+separate label part.
+
 ### "Greg" preset and web generator
 
 The **Greg** preset in `rugged-box-gridfinity.json` is the Light preset with
+a flat label pad for 24mm-or-smaller label maker tape, three side ribs, and
 every other setting pinned explicitly (latch type, seal, base style, latch
 size, tolerance, and so on). Boxes made from it stay consistent even if the
 customizer defaults change later.

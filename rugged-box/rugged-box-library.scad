@@ -92,6 +92,12 @@ label_max_height = 30;
  *  - label: Add optional label for sufficiently wide boxes
  *  - label_text: Custom text for optional label
  *  - label_text_size: Approximate label text size in millimeters
+ *  - label_style: "slide" for a slide-in printed label, or "flat" for a flat
+ *    pad on the front of the box for stick-on labels (such as label maker tape)
+ *  - label_flat_height: With label_style "flat", tallest label in millimeters
+ *    the flat pad should fit
+ *  - label_recess_depth: With label_style "flat", depth in millimeters of an
+ *    optional recess for the label (0 for a plain flat surface)
  *
  * Example:
  *
@@ -120,7 +126,10 @@ module rbox(
     handle=false,
     label=false,
     label_text="",
-    label_text_size=10
+    label_text_size=10,
+    label_style="slide",
+    label_flat_height=12,
+    label_recess_depth=0
 ) {
     // Set base dimensions
     $b_inner_width = width;
@@ -139,6 +148,9 @@ module rbox(
     $b_label = label;
     $b_label_text = label_text;
     $b_label_text_size = label_text_size;
+    $b_label_style = label_style;
+    $b_label_flat_height = label_flat_height;
+    $b_label_recess_depth = label_recess_depth;
     // Set defaults
     $b_preview_assembled = false;
     $b_preview_box_open = false;
@@ -257,6 +269,7 @@ module rbox_stacking_latch(placement="print") { _stacking_latch(placement); }
 module rbox_handle(placement="print") { _handle(placement); }
 
 module rbox_label(placement="print") {
+    if (!_label_flat())
     rbox_for_bottom() {
         _box_label(placement);
     }
@@ -322,7 +335,7 @@ module rbox_part(part) {
                 _box_attachment_placement()
                 rbox_latch(placement="box-preview");
             }
-            if (_label_enabled())
+            if (_label_enabled() && !_label_flat())
             _box_label();
         }
         translate([
@@ -377,7 +390,7 @@ module rbox_part(part) {
                 _box_attachment_placement()
                 rbox_latch(placement="box-preview");
             }
-            if (_label_enabled())
+            if (_label_enabled() && !_label_flat())
             _box_label();
         }
         translate([0, 0, (
@@ -623,14 +636,35 @@ function _handle_enabled() = (
     )
 );
 
+function _label_flat() = ($b_label_style == "flat");
+
 function _label_enabled() = (
     let (label_holder_size = _label_size())
     (
         $b_label
         && _compute_latch_count() == 2
-        && label_holder_size[0] >= 20
-        && label_holder_size[1] >= 10
+        && (
+            _label_flat()
+            ? (
+                _label_rib_separation() >= 20
+                // Shrink the pad on short boxes, down to 6mm labels
+                && $b_bottom_outer_height
+                    >= _label_flat_pad_height() - $b_label_flat_height + 6
+            )
+            : (label_holder_size[0] >= 20 && label_holder_size[1] >= 10)
+        )
     )
+);
+
+// Margin in millimeters around a stick-on label on the flat label pad
+label_flat_margin = 2;
+
+// Height of the thickened flat label pad, measured down from the box top
+function _label_flat_pad_height() = (
+    $b_lip_height
+    + label_flat_margin * 2
+    + $b_label_flat_height
+    + $b_outer_chamfer_vertical
 );
 
 function _label_rib_separation() = (
@@ -1513,7 +1547,7 @@ module _box_top_grip() {
 
 module _box_label_holder_base() {
     rib_separation = _label_rib_separation();
-    threshold = 50;
+    threshold = _label_flat() ? _label_flat_pad_height() : 50;
     label_height = (
         abs($b_outer_height - threshold) < $b_lip_height
             ? $b_outer_height
@@ -1550,10 +1584,33 @@ module _box_label_placement(label=false) {
     children();
 }
 
+// Optional shallow recess in the flat label pad
+module _box_label_recess() {
+    pad_height = min($b_outer_height, _label_flat_pad_height());
+    flat_top = $b_outer_height - $b_edge_radius - label_flat_margin / 2;
+    flat_bottom = $b_outer_height - pad_height + $b_outer_chamfer_vertical;
+    recess_height = min($b_label_flat_height + 1, flat_top - flat_bottom);
+    recess_length = _label_rib_separation() - $b_rib_width - label_flat_margin * 2;
+    // Centered in the flat area between the top edge and the pad's bottom
+    // chamfer
+    face = $b_inner_length / 2 + $b_total_lip_thickness;
+    if ($b_label_recess_depth > 0 && recess_length > 0)
+    translate([0, -face, (flat_top + flat_bottom) / 2])
+    rotate([90, 0, 0])
+    linear_extrude(height=$b_label_recess_depth * 2, center=true)
+    _round_shape(1)
+    square([recess_length, recess_height], center=true);
+}
+
 module _box_label_holder() {
     label_holder_size = _label_holder_size();
     label_size = _label_size();
-    if (_label_enabled() && $b_part == "bottom") {
+    if (_label_enabled() && $b_part == "bottom" && _label_flat()) {
+        difference() {
+            _box_label_holder_base();
+            _box_label_recess();
+        }
+    } else if (_label_enabled() && $b_part == "bottom") {
         _box_label_holder_base();
         _box_label_placement(label=false)
         intersection() {
