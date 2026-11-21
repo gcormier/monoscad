@@ -323,7 +323,10 @@ module custom_bottom() {
             rbox_body();
             if (Baseplate_Corner_Cut > 0)
             rbox_for_interior()
-            baseplate_corner_cut_volume(h_base * 2);
+            difference() {
+                baseplate_corner_cut_volume(h_base * 2);
+                baseplate_corner_wall_keep();
+            }
         }
         rbox_for_interior()
         difference() {
@@ -352,6 +355,23 @@ module baseplate_corner_cut_volume(height) {
         mirror([0, my])
         translate([w / 2 - c, l / 2 - c])
         square([c + 1, c + 1]);
+    }
+}
+
+// Strip along the walls kept at the bottom of the corner cuts. The outer
+// bottom chamfer reaches inside the interior wall line, so without this the
+// corner cut would open a gap between the floor and the walls.
+module baseplate_corner_wall_keep() {
+    w = Width * l_grid + border;
+    l = Length * l_grid + border;
+    keep = $b_wall_thickness * 2 / 3;
+    translate([0, 0, -1])
+    linear_extrude(height=max($b_outer_chamfer_vertical - $b_floor_thickness, 0) + 1.5)
+    difference() {
+        square([w + 20, l + 20], center=true);
+        offset(delta=-keep)
+        offset(r=corner_radius)
+        square([w - corner_radius * 2, l - corner_radius * 2], center=true);
     }
 }
 

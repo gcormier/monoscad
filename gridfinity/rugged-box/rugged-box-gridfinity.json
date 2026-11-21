@@ -3,7 +3,7 @@
         "Greg": {
             "Gridfinity_Base_Style": "minimal",
             "Lip_Seal_Type": "wedge",
-            "Top_Grip": "true",
+            "Top_Grip": "false",
             "Hinge_End_Stops": "true",
             "Latch_Type": "draw",
             "Third_Hinge": "true",
