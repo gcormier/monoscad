@@ -267,6 +267,20 @@ function changedAdv() {
   return diff;
 }
 
+// Form values are strings. Give OpenSCAD real numbers and booleans, using the
+// preset value's type, so -D Side_Rib_Count=4 is not sent as "4".
+function typedDefines(diff) {
+  const p = manifest.preset_values;
+  const out = {};
+  for (const [k, v] of Object.entries(diff)) {
+    const base = p[k];
+    if (isBool(base)) out[k] = v === "true";
+    else if (isNum(base) && isNum(v)) out[k] = Number(v);
+    else out[k] = v;
+  }
+  return out;
+}
+
 function markChanged() {
   const diff = changedAdv();
   for (const inp of adv.querySelectorAll("[data-key]")) {
@@ -401,7 +415,7 @@ async function onRender(ev) {
   viewer.clear();
   viewer.message("Loading OpenSCAD…");
 
-  const defines = { ...s, ...changedAdv() };
+  const defines = { ...s, ...typedDefines(changedAdv()) };
   const items = Object.fromEntries(parts.map((p) => [p, el("li", {}, p)]));
   progress.append(...Object.values(items));
   const done = [];
